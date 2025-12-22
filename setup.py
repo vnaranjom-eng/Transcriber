@@ -42,9 +42,4 @@ setup(
             "mypy>=1.0.0",
         ],
     },
-    entry_points={
-        "console_scripts": [
-            "transcriber-pipecat=transcriber_pipecat.cli:main",
-        ],
-    },
 )
