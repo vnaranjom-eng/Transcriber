@@ -1,0 +1,18 @@
+{
+  # Optional: set email for Let's Encrypt
+  # email you@example.com
+}
+
+# Replace with your domain (or use :80 for local)
+{$DOMAIN} {
+  encode zstd gzip
+
+  @ws {
+    header Connection *Upgrade*
+    header Upgrade websocket
+  }
+
+  reverse_proxy @ws app:8000
+  reverse_proxy app:8000
+}
+

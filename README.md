@@ -43,6 +43,31 @@ Luego:
 - **Start mic** (te va a pedir permiso de micrófono)
 - hablá y mirá `stt_final` y la respuesta del `llm`
 
+## Producción (Docker)
+
+### Opción A: solo contenedor (sin HTTPS)
+
+```bash
+cp .env.example .env
+# completa DEEPGRAM_API_KEY y OPENAI_API_KEY
+docker compose up --build -d
+```
+
+Abrí: `http://TU_HOST:8000/`
+
+### Opción B: con HTTPS automático (Caddy + dominio)
+
+Requiere que tu DNS apunte el dominio al servidor.
+
+```bash
+cp .env.example .env
+# completa DEEPGRAM_API_KEY y OPENAI_API_KEY
+export DOMAIN=tu-dominio.com
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+Abrí: `https://tu-dominio.com/`
+
 ## WebSocket: `GET /ws`
 
 ### Entrada (cliente → server)
