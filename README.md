@@ -31,6 +31,18 @@ python3 -m backend.run
 
 Healthcheck: `GET /healthz`
 
+## Frontend (probar con tu voz)
+
+Con el backend corriendo, abrí en el navegador:
+
+- `http://localhost:8000/`
+
+Luego:
+
+- **Conectar**
+- **Start mic** (te va a pedir permiso de micrófono)
+- hablá y mirá `stt_final` y la respuesta del `llm`
+
 ## WebSocket: `GET /ws`
 
 ### Entrada (cliente → server)

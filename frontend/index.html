@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Transcriber (Pipecat + Deepgram + OpenAI)</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --card: #111a33;
+        --muted: #9fb0d0;
+        --text: #e9efff;
+        --accent: #6aa6ff;
+        --good: #2dd4bf;
+        --bad: #fb7185;
+        --border: rgba(255, 255, 255, 0.1);
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+          "Apple Color Emoji", "Segoe UI Emoji";
+        background: radial-gradient(1200px 800px at 20% 10%, rgba(106, 166, 255, 0.25), transparent),
+          radial-gradient(1000px 600px at 80% 30%, rgba(45, 212, 191, 0.18), transparent),
+          var(--bg);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 28px 18px 40px;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0 0 10px;
+      }
+      .sub {
+        margin: 0 0 18px;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      @media (max-width: 860px) {
+        .row {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: rgba(17, 26, 51, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+        backdrop-filter: blur(8px);
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      button {
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button.primary {
+        border-color: rgba(106, 166, 255, 0.45);
+        background: rgba(106, 166, 255, 0.16);
+      }
+      button.danger {
+        border-color: rgba(251, 113, 133, 0.45);
+        background: rgba(251, 113, 133, 0.12);
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+      .pill {
+        font-size: 12px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 10px;
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.25);
+      }
+      .dot.good {
+        background: var(--good);
+      }
+      .dot.bad {
+        background: var(--bad);
+      }
+      .field {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 10px;
+        align-items: center;
+        margin: 10px 0;
+      }
+      .field label {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        padding: 10px 12px;
+        outline: none;
+      }
+      textarea {
+        min-height: 86px;
+        resize: vertical;
+      }
+      .log {
+        white-space: pre-wrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 12px;
+        color: #d7e3ff;
+        line-height: 1.4;
+        max-height: 280px;
+        overflow: auto;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+      }
+      .sep {
+        height: 1px;
+        background: var(--border);
+        margin: 12px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Transcriber: Pipecat + Deepgram (realtime) + OpenAI</h1>
+      <p class="sub">
+        Probá con tu voz: el navegador captura tu micrófono, convierte a <span class="mono">PCM16LE 16kHz mono</span>
+        y lo streamea por WebSocket al backend.
+      </p>
+
+      <div class="row">
+        <div class="card">
+          <div class="controls">
+            <button id="btnConnect" class="primary">Conectar</button>
+            <button id="btnStart" class="primary" disabled>Start mic</button>
+            <button id="btnStop" class="danger" disabled>Stop</button>
+            <span class="pill"><span id="dot" class="dot"></span> <span id="status">desconectado</span></span>
+          </div>
+
+          <div class="field">
+            <label for="wsUrl">WS URL</label>
+            <input id="wsUrl" value="" />
+          </div>
+
+          <div class="field">
+            <label for="lang">Deepgram lang</label>
+            <select id="lang">
+              <option value="es" selected>es</option>
+              <option value="en">en</option>
+              <option value="pt">pt</option>
+              <option value="fr">fr</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="dgModel">Deepgram model</label>
+            <input id="dgModel" value="nova-3-general" />
+          </div>
+
+          <div class="field">
+            <label for="openaiModel">OpenAI model</label>
+            <input id="openaiModel" value="gpt-4.1" />
+          </div>
+
+          <div class="field">
+            <label for="systemPrompt">System prompt</label>
+            <textarea id="systemPrompt">Eres un asistente útil y conciso.</textarea>
+          </div>
+
+          <div class="sep"></div>
+          <div class="muted">
+            Audio enviado como binario en chunks. Target: <span class="mono">16kHz mono</span>.
+          </div>
+          <div class="muted" id="audioInfo"></div>
+        </div>
+
+        <div class="card">
+          <div class="controls">
+            <span class="pill">STT final</span>
+          </div>
+          <div id="sttFinal" class="log"></div>
+
+          <div class="sep"></div>
+
+          <div class="controls">
+            <span class="pill">LLM respuesta</span>
+          </div>
+          <div id="llmText" class="log"></div>
+
+          <div class="sep"></div>
+
+          <div class="controls">
+            <span class="pill">Eventos</span>
+          </div>
+          <div id="events" class="log muted"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/frontend/app.js"></script>
+  </body>
+</html>
+

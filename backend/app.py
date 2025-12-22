@@ -7,7 +7,8 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from backend.pipecat_session import PipecatSession, SessionConfig
@@ -16,6 +17,19 @@ from backend.pipecat_session import PipecatSession, SessionConfig
 load_dotenv()
 
 app = FastAPI(title="Pipecat Deepgram + OpenAI Backend", version="0.1.0")
+
+# Serve the frontend (zero-build static files)
+_FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+if os.path.isdir(_FRONTEND_DIR):
+    app.mount("/frontend", StaticFiles(directory=_FRONTEND_DIR, html=False), name="frontend")
+
+
+@app.get("/")
+def index():
+    # Serve the frontend entrypoint directly.
+    if os.path.isdir(_FRONTEND_DIR):
+        return FileResponse(os.path.join(_FRONTEND_DIR, "index.html"))
+    return JSONResponse({"ok": True, "frontend": "/frontend/index.html"})
 
 
 @app.get("/healthz")
